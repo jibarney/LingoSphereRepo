@@ -15,6 +15,8 @@ import javax.swing.border.*;
 import java.awt.image.BufferedImage;
 
 public class LoginPage {
+    
+public enum AcctType{STUDENT,INSTRUCTOR} ;
 
 private JRadioButton CU = new JRadioButton("Existing Account",true);
 private JRadioButton NU = new JRadioButton("New Account",false);
