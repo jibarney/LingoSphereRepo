@@ -13,10 +13,9 @@ import javax.imageio.*;
 import javax.swing.border.*;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 
 public class LoginPage {
-    
-public enum AcctType{STUDENT,INSTRUCTOR} ;
 
 private JRadioButton CU = new JRadioButton("Existing Account",true);
 private JRadioButton NU = new JRadioButton("New Account",false);
@@ -31,6 +30,8 @@ private JTextField curUserField = new JTextField(10);
 private JTextField curPsswdField = new JTextField(10);
 private JTextField newUserField = new JTextField(10);
 private JTextField newPsswdField = new JTextField(10);
+private JButton submitButton = new JButton("Submit");
+
 JPanel newLoginInfo1 = new JPanel(new GridLayout(5,2,2,2)) ;
 JPanel loginPanel = new JPanel(new GridLayout(5,2,5,5));
  
@@ -46,7 +47,14 @@ static String logInMsg = "\nWelcome to Lingo Sphere, the language learning "+
 static String newAcctMsg = "\n\n New to Lingo Sphere? \n"
         + "Please setup a new account" ;
  
-    public LoginPage() {};
+private ArrayList<User> userList = new ArrayList<>();
+private Boolean newUserFlag = new Boolean(false) ;
+
+    public LoginPage() 
+    { 
+        userList = getUsers("userdata.txt");
+       
+    }
     
     public JPanel buildLoginGui()
     {
@@ -151,10 +159,11 @@ static String newAcctMsg = "\n\n New to Lingo Sphere? \n"
        panel.add(Box.createRigidArea(new Dimension(0,15)));
        panel.add(userPanel);
        panel.add(Box.createRigidArea(new Dimension(0,15)));
-       panel.add(new JButton("Submit"));
+       panel.add(submitButton);
        panel.add(Box.createRigidArea(new Dimension(0,15)));
        
        buttonListener bl = new buttonListener() ;
+       submitButton.addActionListener(new submitListener());
    
        //Initially, current user area enabled, new user disabled.
        Component[] comNU = newLoginInfo1.getComponents();
@@ -181,6 +190,7 @@ static String newAcctMsg = "\n\n New to Lingo Sphere? \n"
                for (int a = 0; a < comNU.length; a++) {
                      comNU[a].setEnabled(false);
               }
+              newUserFlag = false;
             }
             
             if (NU.isSelected())
@@ -192,8 +202,79 @@ static String newAcctMsg = "\n\n New to Lingo Sphere? \n"
                for (int a = 0; a < comNU.length; a++) {
                      comNU[a].setEnabled(true);
               }
+              newUserFlag = true;
             }                               
         }
         }
+    
+     private class submitListener implements ActionListener{
+         
+        public void actionPerformed(ActionEvent e)
+        {   
+            System.out.println("Submit button pushed");
+            System.out.println(curUserField.getText());
+            System.out.println(curPsswdField.getText());
+            
+            for (User user: userList){
+                 //Compare input user and password with list
+                
+            if (user.checkValidUser(curUserField.getText(),curPsswdField.getText()))  
+             {
+                 System.out.println("User found") ;
+             }}
+     }
+    }
+     
+    ArrayList<User> getUsers(String userFile)
+    {
+        ArrayList<User> userList = new ArrayList<>() ;
+        FileInputStream fis = null ;
+        BufferedReader reader = null ;
+        
+        try{
+            fis = new FileInputStream(userFile) ;
+            reader = new BufferedReader(new InputStreamReader(fis));
+            
+    // For now, we're assuming the file is in the correct format so 
+    // there are no error checks.
+            
+         String line = " " ;
+         while (line != null)
+          {
+            line = reader.readLine() ;
+
+            if (line != null){ 
+                String username = line;
+               // String username = line.substring(0,line.indexOf(' '));
+                String psswd = reader.readLine();
+                String userType = reader.readLine() ;
+                String className = reader.readLine() ; 
+                
+                line = reader.readLine() ;  //placeholders 
+                line = reader.readLine() ;
+                line = reader.readLine() ;
+                line = reader.readLine() ;
+                line = reader.readLine() ;
+                line = reader.readLine() ;
+                
+                User UserToAdd = new User(username,psswd,userType, className);
+                userList.add(UserToAdd); 
+            }      
+            }
+        } 
+        catch (FileNotFoundException ex) {} 
+        catch (IOException ex){}
+        finally 
+        {
+          try {
+                reader.close();
+                fis.close();
+            } 
+          catch(IOException ex){}
+         };
+        
+        
+        return userList;
+    }
     
   }
