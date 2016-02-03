@@ -22,14 +22,15 @@ private JRadioButton NU = new JRadioButton("New Account",false);
 
 // private JRadioButton guestAcct = new JRadioButton("Guest",false);
 private JLabel headerLogo = new JLabel() ;
-private String[] allClasses = {"German 103","Spanish 200","Klingon Basics","Swahili"};
-private String[] allUserTypes = {"Student","Instructor"} ;
+private String[] allClasses = {"GER103","SPN200","KLG405","FRN320"};
+private String[] allUserTypes = {"STUDENT","INSTRUCTOR"} ;
 private JComboBox classNum = new JComboBox(allClasses) ; 
 private JComboBox accountType = new JComboBox(allUserTypes);
 private JTextField curUserField = new JTextField(10);
 private JTextField curPsswdField = new JTextField(10);
 private JTextField newUserField = new JTextField(10);
 private JTextField newPsswdField = new JTextField(10);
+private JTextArea systemMessages = new JTextArea("System messages here",3,25) ;
 private JButton submitButton = new JButton("Submit");
 
 JPanel newLoginInfo1 = new JPanel(new GridLayout(5,2,2,2)) ;
@@ -47,16 +48,18 @@ static String logInMsg = "\nWelcome to Lingo Sphere, the language learning "+
 static String newAcctMsg = "\n\n New to Lingo Sphere? \n"
         + "Please setup a new account" ;
  
-private ArrayList<User> userList = new ArrayList<>();
-private Boolean newUserFlag = new Boolean(false) ;
+String userDataFilename = "userdata.txt" ;
 
-    public LoginPage() 
+private ArrayList<User> userList = new ArrayList<>();
+private boolean newUserFlag = false ;
+
+public LoginPage() 
     { 
-        userList = getUsers("userdata.txt");
+       
        
     }
     
-    public JPanel buildLoginGui()
+ public JPanel buildLoginGui()
     {
      //Outermost container
        JPanel panel = new JPanel();
@@ -100,7 +103,6 @@ private Boolean newUserFlag = new Boolean(false) ;
        CU.addActionListener(new buttonListener());
        NU.addActionListener(new buttonListener());
        
-       JTextArea systemMessages = new JTextArea("System messages here",3,25) ;
        JScrollPane scrollPane1 = new JScrollPane(systemMessages ) ;
        systemMessages.setEditable(false); 
        systemMessages.setFont(new Font("Serif", Font.BOLD, 14)); 
@@ -129,7 +131,6 @@ private Boolean newUserFlag = new Boolean(false) ;
        
  // New User Subpanel - New account setup infof
        
-      
        TitledBorder newUserBorder = BorderFactory.createTitledBorder("New User");
        newUserBorder.setTitlePosition(TitledBorder.TOP);
        newLoginInfo1.setBorder(newUserBorder);
@@ -178,30 +179,17 @@ private Boolean newUserFlag = new Boolean(false) ;
          
         public void actionPerformed(ActionEvent e)
         {   
-           Component[] comNU = newLoginInfo1.getComponents();
-           Component[] comCU = loginPanel.getComponents() ;
-           
             if (CU.isSelected())
             {
-              System.out.println("Current user selected");
-              for (int a = 0; a < comCU.length; a++) {
-                     comCU[a].setEnabled(true);
-              }
-               for (int a = 0; a < comNU.length; a++) {
-                     comNU[a].setEnabled(false);
-              }
+              enablePanel(loginPanel,true);
+              enablePanel(newLoginInfo1,false);
               newUserFlag = false;
             }
             
             if (NU.isSelected())
             {
-              System.out.println("New user selected") ;
-              for (int a = 0; a < comCU.length; a++) {
-                     comCU[a].setEnabled(false);
-              }
-               for (int a = 0; a < comNU.length; a++) {
-                     comNU[a].setEnabled(true);
-              }
+              enablePanel(loginPanel,false);
+              enablePanel(newLoginInfo1,true);
               newUserFlag = true;
             }                               
         }
@@ -211,25 +199,56 @@ private Boolean newUserFlag = new Boolean(false) ;
          
         public void actionPerformed(ActionEvent e)
         {   
-            System.out.println("Submit button pushed");
-            System.out.println(curUserField.getText());
-            System.out.println(curPsswdField.getText());
+            boolean validLogin = false;
+            User userFound = new User();
             
-            for (User user: userList){
-                 //Compare input user and password with list
-                
-            if (user.checkValidUser(curUserField.getText(),curPsswdField.getText()))  
-             {
-                 System.out.println("User found") ;
-             }}
+            if (newUserFlag)
+            {
+                String newUsername = newUserField.getText() ;
+                String newPsswd = newPsswdField.getText() ;
+                if ((newUsername.length() < 5) || (newPsswd.length() < 5))
+                {
+                    systemMessages.setText("Password and username must be at least 5 characters");
+                }
+                else
+                {
+                    userFound = addUser(userDataFilename) ;
+                    systemMessages.setText(userFound.welcomeUser()); 
+                    enablePanel(newLoginInfo1,false);
+                }
+            }
+            else  // Look for existing user
+            {
+               userList = getUsers(userDataFilename);
+               for (User user: userList){
+               if (user.checkValidUser(curUserField.getText(),curPsswdField.getText()))  
+                { 
+                   validLogin = true;
+                   userFound = new User(user);
+                   break;
+                }      
+               }
+               if (!validLogin)
+                   systemMessages.setText(" Invalid login. Please try again.");
+               else
+               {
+                   systemMessages.setText(userFound.welcomeUser()); 
+                   enablePanel(loginPanel,false);
+               }
+           }
      }
     }
+    
+ // Read in all user accounts
      
     ArrayList<User> getUsers(String userFile)
     {
         ArrayList<User> userList = new ArrayList<>() ;
         FileInputStream fis = null ;
         BufferedReader reader = null ;
+        File file =new File(userFile);
+        
+        if (!file.exists())return userList ;
         
         try{
             fis = new FileInputStream(userFile) ;
@@ -245,7 +264,6 @@ private Boolean newUserFlag = new Boolean(false) ;
 
             if (line != null){ 
                 String username = line;
-               // String username = line.substring(0,line.indexOf(' '));
                 String psswd = reader.readLine();
                 String userType = reader.readLine() ;
                 String className = reader.readLine() ; 
@@ -272,9 +290,50 @@ private Boolean newUserFlag = new Boolean(false) ;
             } 
           catch(IOException ex){}
          };
-        
-        
         return userList;
     }
     
-  }
+    User addUser(String userFile)
+    {
+        try{
+    		File file =new File(userFile);
+    		
+    		//if file doesnt exists, then create it
+    		if(!file.exists()){
+    			file.createNewFile();
+    		}
+    		
+    		//true = append file
+    		FileWriter fw = new FileWriter(file.getName(),true);
+    	        BufferedWriter writer = new BufferedWriter(fw);
+                writer.write(newUserField.getText()+" \n") ;
+    	        writer.write(newPsswdField.getText()+" \n");
+                writer.write(accountType.getSelectedItem().toString()+" \n");
+                writer.write(classNum.getSelectedItem().toString()+" \n");
+                writer.write("*\n");
+                writer.write("*\n");
+                writer.write("*\n");
+                writer.write("*\n");
+                writer.write("*\n");
+                writer.write("*\n");
+    	        writer.close();
+	        
+    	}catch(IOException e){
+    		e.printStackTrace();
+    	}
+        
+        return new User(newUserField.getText(),newPsswdField.getText(),
+                                accountType.getSelectedItem().toString(),
+                                classNum.getSelectedItem().toString());
+    }
+    
+   // Utility to disable/enable all components in a panel
+    void enablePanel(JPanel panel, boolean enabled)
+    {
+          Component[] panelIO = panel.getComponents();
+          for (int a = 0; a < panelIO.length; a++) {
+                     panelIO[a].setEnabled(enabled);
+          }
+    }
+    
+   }
