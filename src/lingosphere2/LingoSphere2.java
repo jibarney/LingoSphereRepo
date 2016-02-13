@@ -13,11 +13,13 @@ public class LingoSphere2 extends JPanel{
     TranslatePage xLate = new TranslatePage() ;
     SelfTestPage lessonPlan = new SelfTestPage();
     GradedTestPage gradedTest = new GradedTestPage();
+    TeacherPage teacherPage = new TeacherPage() ;
     
     tabbedPane.addTab("Welcome", mainPage.buildLoginGui());
     tabbedPane.addTab("Lesson Plan", xLate.buildXlateGui());
     tabbedPane.addTab("Self Test", lessonPlan.buildSelfTestGui());
     tabbedPane.addTab("Graded Test", gradedTest.buildGradedTestGui());
+    tabbedPane.addTab("TeacherPage",teacherPage);
     add(tabbedPane);
     }
     
